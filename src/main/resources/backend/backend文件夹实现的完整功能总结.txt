@@ -1,0 +1,35 @@
+用户访问
+    ↓
+1. page/login/login.html (登录页面)
+    ↓ 引用
+2. js/request.js (HTTP配置) + api/login.js (登录API)
+    ↓ 登录成功
+3. index.html (主框架)
+    ↓ 引用
+4. js/request.js (复用) + api/login.js (复用)
+    ↓ iframe加载
+5. page/member/list.html (员工列表)
+    ↓ 引用
+6. js/request.js (复用) + api/member.js (员工API)
+    ↓ 用户操作
+7. 其他页面模块 (category/food/combo/order)
+    ↓ 各自引用
+8. 对应的API文件 (category.js/food.js/combo.js/order.js)
+
+
+Backend文件夹实现的完整功能总结
+核心架构：
+    1.js/request.js - 全局HTTP请求管理中心
+    2.index.html - 主框架控制器
+    3.page/*/ 目录 - 各功能模块页面
+    4.api/*.js - 各模块API函数库
+
+
+实现的业务功能：
+    1.用户认证系统 - 登录/登出/会话管理
+    2.员工管理系统 - 员工增删改查/状态管理
+    3.分类管理系统 - 菜品分类管理
+    4.菜品管理系统 - 菜品信息管理/起售停售
+    5.套餐管理系统 - 套餐组合管理
+    6.订单管理系统 - 订单查看和处理
+每个模块都遵循相同的设计模式：页面文件 → API文件 → HTTP拦截器 → 后端接口，形成了一个统一、可维护的前端管理系统。
