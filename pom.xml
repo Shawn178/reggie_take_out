@@ -9,6 +9,7 @@
         <!-- 保持与Java 8兼容的SpringBoot版本 -->
         <version>2.4.5</version>
         <relativePath/> <!-- lookup parent from repository -->
+
     </parent>
     <groupId>com.itheima</groupId>
     <artifactId>reggie_take_out</artifactId>
@@ -106,6 +107,19 @@
           <groupId>javax.activation</groupId>
           <artifactId>activation</artifactId>
           <version>1.1.1</version>
+        </dependency>
+
+        <!--Jedis依赖，用于操作Redis,基本上用不着了-->
+        <!--<dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>3.6.0</version>
+        </dependency>-->
+
+        <!--更多的使用Spring Data Redis简化Redis操作-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
     </dependencies>
