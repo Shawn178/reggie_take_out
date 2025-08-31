@@ -13,9 +13,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.annotations.Delete;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /*
@@ -34,6 +37,10 @@ public class DishController {
     // 自动注入CategoryService，为了获取分类对象，从而获取分类名称
     @Autowired
     private CategoryService categoryService;
+
+    // 自动注入RedisTemplate,缓存菜品数据
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     /*
     一、新增菜品的方法
@@ -227,6 +234,15 @@ public class DishController {
         // 调用Service层的修改方法，同时更新菜品和口味信息
         dishService.updateWithFlavor(dishDto);
 
+        // 新方法：清理缓存
+        // 法一：加入清理所有菜品的缓存数据,只要菜品一更新，就自动清理缓存
+        /*Set keys = redisTemplate.keys("dish_*");
+        redisTemplate.delete(keys);*/
+
+        // 法二：精确清理缓存数据，只清理某个分类下的缓存
+        String key = "dish_" + dishDto.getCategoryId() + "_1";
+        redisTemplate.delete(key);
+
         return R.success("修改菜品成功");
     }
 
@@ -312,6 +328,22 @@ public class DishController {
      */
     @GetMapping("/list")
     public R<List<DishDto>> list(@ModelAttribute Dish dish){
+
+        // 先定义一个返回值：List<DishDto>
+        List<DishDto> dishDtoList = null;
+
+        // 新方法：通过Redis缓存菜品数据
+        // 1.定义缓存需要的key
+        String key = "dish_" + dish.getCategoryId() + "_" + dish.getStatus();
+        // 2.先从Redis中获取缓存数据
+        dishDtoList = (List<DishDto>) redisTemplate.opsForValue().get(key);
+        // 3.判断缓存数据是否为空
+        if (dishDtoList != null){
+            // 3.1 如果存在数据，直接返回，不用查数据库了
+            return R.success(dishDtoList);
+        }
+            // 3.2 若不存在，进入旧方法：需要查询数据库，将查询到的菜品数据缓存到Redis
+        // 旧方法：直接查询数据库
         // 构造一个查询条件对象
         LambdaQueryWrapper<Dish> queryWrapper = new LambdaQueryWrapper<>();
         // 添加查询条件:根据分类id(categoryId)查找菜品
@@ -326,8 +358,8 @@ public class DishController {
         // 调用Service层修改数据库
         List<Dish> list = dishService.list(queryWrapper);
 
-        // 3.把每个 Dish 转成 DishDto，并补齐分类名
-        List<DishDto> dishDtoList = list.stream().map((item) -> {
+        // 把每个 Dish 转成 DishDto，并补齐分类名
+            dishDtoList = list.stream().map((item) -> {
             // 先创建一个Dto对象
             DishDto dishDto = new DishDto();
             // 把全部的dish属性通过item先复制给DishDto，然后单独再修改分类名称
@@ -356,7 +388,8 @@ public class DishController {
             return dishDto;
         }).collect(Collectors.toList());
 
-
+        // 4.等查询数据库结束后，缓存到Redis中
+        redisTemplate.opsForValue().set(key,dishDtoList,60, TimeUnit.MINUTES);
 
 
 
