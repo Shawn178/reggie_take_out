@@ -13,6 +13,8 @@ import com.itheima.reggie.service.SetmealService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -106,8 +108,13 @@ public class SetmealController {
     因为SetmealDto类中封装了setmeal的全属性以及setmealDish的属性，所以要使用SetmealDto类接收
 
     并且前端返回的是JSON数据，要使用@RequestBody注解
+
+    方法优化：加入@CacheEvict注解，表示 有数据新增时，清除缓存
+    目的是：缓存数据，防止数据不一致，即 因为新增套餐后，需要更新缓存数据，防止缓存数据与数据库数据不一致
+
      */
     @PostMapping
+    @CacheEvict(value = "setmealCache",allEntries = true)
     public R<String> save(@RequestBody SetmealDto setmealDto){
         // 加日志
         log.info("新增套餐：{}",setmealDto);
@@ -122,8 +129,12 @@ public class SetmealController {
     /*
     三、添加一个删除套餐的方法
     需要添加注解@RequestParam
+
+    优化方法：使用@CacheEvict注解，删除缓存数据
      */
     @DeleteMapping
+    // 加入allEntries = true，表示删除所有缓存数据(不加则默认是false)
+    @CacheEvict(value = "setmealCache",allEntries = true)
     public R<String> deleteBatch(@RequestParam List<Long> ids){
         // 加日志
         log.info("删除套餐:{}",ids);
@@ -156,7 +167,16 @@ public class SetmealController {
 
     /*
     五、根据条件查询对应的套餐数据
+
+优化代码：加入缓存注解
+    添加注解@Cacheable,缓存套餐数据
+    因为查询条件是分类id和状态status,所以缓存的key需要拼接两者
+
+    调试错误：
+    1.点击套餐分类无反应，报500错误
+    错误原因：因为R封装类无法序列化，需要在R类中实现序列化接口Serializable
      */
+    @Cacheable(value = "setmealCache",key = "#setmeal.categoryId + '_' + #setmeal.status")
     @GetMapping("/list")
     public R<List<Setmeal>> list(Setmeal setmeal){
         // 1.新建一个构造器
@@ -164,6 +184,8 @@ public class SetmealController {
         // 2.查询条件：先根据分类id查询套餐，然后按照id和时间排序
         queryWrapper.eq(setmeal.getCategoryId() != null,Setmeal::getCategoryId,setmeal.getCategoryId());
         log.info("查询到的套餐分类id:{}",setmeal.getCategoryId());
+        queryWrapper.eq(setmeal.getStatus() != null,Setmeal::getStatus,setmeal.getStatus());
+        log.info("查询到的套餐状态:{}",setmeal.getStatus());
 
         queryWrapper.orderByDesc(Setmeal::getUpdateTime);
         // 3.调用Service方法，查询数据

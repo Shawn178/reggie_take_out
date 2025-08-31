@@ -2,12 +2,13 @@ package com.itheima.reggie.common;
 
 import lombok.Data;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
 // R：result，返回json数据给前端
 @Data
-public class R<T> {
+public class R<T> implements Serializable {
 
     // 状态码在前端login.html中用到，返回1表示登录成功，进入页面；然后返回msg和data
     private Integer code; // 编码：1成功，0和其它数字为失败
