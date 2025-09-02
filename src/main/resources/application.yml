@@ -1,20 +1,52 @@
 server:
   port: 8081
 spring:
+
+  autoconfigure:
+    exclude:
+      - com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceAutoConfigure
+      
   application:
     # 应用名称，可改
     name: reggie_take_out
-  datasource:
-    druid:
-      # 数据库连接
-      driver-class-name: com.mysql.cj.jdbc.Driver
-      url: jdbc:mysql://localhost:3306/reggie?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
-      username: root
-      password: 123456
+
+  shardingsphere:
+    datasource:
+      names:
+        master,slave
+      # 主数据源
+      master:
+        type: com.alibaba.druid.pool.DruidDataSource
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: jdbc:mysql://192.168.0.101:3306/reggie?useSSL=false&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+        username: 192.168.0.101
+        password: "123456"
+      # 从数据源
+      slave:
+        type: com.alibaba.druid.pool.DruidDataSource
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: jdbc:mysql://192.168.0.102:3306/reggie?useSSL=false&allowPublicKeyRetrieval=true&useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+        username: 192.168.0.102
+        password: "123456"
+    masterslave:
+      # 读写分离配置
+      load-balance-algorithm-type: round_robin
+      # 最终的数据源名称
+      name: dataSource
+      # 主库数据源名称
+      master-data-source-name: master
+      # 从库数据源名称列表，多个逗号分隔
+      slave-data-source-names: slave
+    props:
+      sql:
+        show: true #开启SQL显示，默认false
+
+  main:
+    allow-bean-definition-overriding: true
 
  # 配置Redis
   redis:
-    host: 192.168.0.102
+    host: 192.168.0.101
     port: 6379
     password: 1234
     database: 0
@@ -22,6 +54,8 @@ spring:
   cache:
     redis:
       time-to-live: 1800000 # 缓存有效期：30min
+
+
 
 mybatis-plus:
   configuration:
@@ -37,3 +71,13 @@ mybatis-plus:
 # 配置文件上传路径，就不需要挨个修改了
 reggie:
   path: D:\0 Postgraduate\JAVA\JAVA Project\Java_Project_Practices\reggie_take_out\upload\
+
+debug: true
+
+logging:
+  level:
+    ShardingSphere-SQL: info
+    org.apache.shardingsphere: info
+    # com.baomidou.mybatisplus: debug   # 可选
+    # org.mybatis: debug                # 可选
+    # com.alibaba.druid: info           # 可选
