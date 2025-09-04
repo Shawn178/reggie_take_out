@@ -59,7 +59,11 @@ public class LoginCheckFilter implements Filter {
                 "/front/**", // front的所有页面全放行
                 "/common/**", // 不登录账号也可以使用上传下载网页
                 "/user/sendMsg", // 移动端发送验证码
-                "/user/login"
+                "/user/login", // 移动端用户登录
+                "/doc.html", // swagger文档界面
+                "/webjars/**", //
+                "/swagger-resources", // swagger静态资源
+                "/v2/api-docs"
         };
         
         // 临时调试：打印所有白名单路径

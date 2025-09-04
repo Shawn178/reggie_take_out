@@ -10,6 +10,10 @@ import com.itheima.reggie.entity.Setmeal;
 import com.itheima.reggie.service.CategoryService;
 import com.itheima.reggie.service.SetmealDishService;
 import com.itheima.reggie.service.SetmealService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +28,7 @@ import java.util.stream.Collectors;
 // 套餐菜品关系的控制类,写成SetmealController是因为主表依旧是套餐表
 @RestController
 @Slf4j
+@Api(tags = "套餐相关接口")
 @RequestMapping("/setmeal")
 public class SetmealController {
 
@@ -43,6 +48,13 @@ public class SetmealController {
     一、添加一个分页查询方法，用于查询套餐列表
      */
     @GetMapping("/page")
+    @ApiOperation("套餐分页查询接口")
+    // 相对于给方法的多个参数添加注释
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "page", value = "页码", required = true),
+            @ApiImplicitParam(name = "pageSize", value = "每页记录数", required = true),
+            @ApiImplicitParam(name = "name", value = "套餐名称", required = false)
+    })
     // 定义一个分页查询方法,page：当前页码，pageSize：每页显示的记录数，name：查询条件
     public R<Page> page(int page,int pageSize,String name){
         // 1.创建一个分页对象:Page对象
@@ -113,6 +125,7 @@ public class SetmealController {
     目的是：缓存数据，防止数据不一致，即 因为新增套餐后，需要更新缓存数据，防止缓存数据与数据库数据不一致
 
      */
+    @ApiOperation("新增套餐接口")
     @PostMapping
     @CacheEvict(value = "setmealCache",allEntries = true)
     public R<String> save(@RequestBody SetmealDto setmealDto){
@@ -132,6 +145,7 @@ public class SetmealController {
 
     优化方法：使用@CacheEvict注解，删除缓存数据
      */
+    @ApiOperation("删除套餐接口")
     @DeleteMapping
     // 加入allEntries = true，表示删除所有缓存数据(不加则默认是false)
     @CacheEvict(value = "setmealCache",allEntries = true)
@@ -155,6 +169,7 @@ public class SetmealController {
     1.返回404错误：因为没添加@PutMapping的page
     2.返回405错误：因为前端要求返回POST请求，而且状态参数需要加入@PathVariable
      */
+    @ApiOperation("修改套餐状态接口")
     @PostMapping("/status/{status}")
     public R<String> updateStatus(@PathVariable Integer status,@RequestParam List<Long> ids){
         // 加日志
@@ -176,6 +191,7 @@ public class SetmealController {
     1.点击套餐分类无反应，报500错误
     错误原因：因为R封装类无法序列化，需要在R类中实现序列化接口Serializable
      */
+    @ApiOperation("套餐条件查询接口")
     @Cacheable(value = "setmealCache",key = "#setmeal.categoryId + '_' + #setmeal.status")
     @GetMapping("/list")
     public R<List<Setmeal>> list(Setmeal setmeal){
